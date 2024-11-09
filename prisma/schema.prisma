@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id Int @id @default(autoincrement())
+
+  code       String
+  hiddenWord String
+
+  createdAt DateTime @default(now())
+}
