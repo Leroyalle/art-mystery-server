@@ -65,8 +65,25 @@ export class AppGateway {
     }
   }
   handleConnection(socket: Socket) {
-    const roomId = socket.handshake.query.roomId;
+    const roomId = socket.handshake.query.roomId as string;
     socket.data.room = roomId;
     socket.join(roomId);
+    const onlineUsers = this.server.sockets.adapter.rooms.get(roomId);
+    if (onlineUsers) {
+      socket.emit('online_users', onlineUsers.size);
+      socket.broadcast.to(roomId).emit('online_users', onlineUsers.size);
+    }
+  }
+  handleDisconnect(socket: Socket) {
+    if (socket.data && socket.data.room) {
+      const onlineUsers = this.server.sockets.adapter.rooms.get(
+        socket.data.room,
+      );
+      if (onlineUsers) {
+        socket.broadcast
+          .to(socket.data.room)
+          .emit('online_users', onlineUsers.size);
+      }
+    }
   }
 }
