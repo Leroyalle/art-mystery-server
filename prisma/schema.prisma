@@ -10,7 +10,10 @@ datasource db {
 model Room {
   id Int @id @default(autoincrement())
 
-  code       String
+  author   String
+  authorId String
+
+  code       String @unique
   hiddenWord String
 
   createdAt DateTime @default(now())

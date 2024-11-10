@@ -3,7 +3,7 @@ import { PrismaClient, Room } from '@prisma/client';
 
 @Injectable()
 export class RoomsService {
-  async findRoom(code: string): Promise<Room> {
+  async findRoom({ code }: { code: string }): Promise<Room> {
     if (!code) {
       throw new HttpException('Не указан код комнаты', HttpStatus.BAD_REQUEST);
     }
@@ -29,27 +29,47 @@ export class RoomsService {
   }
 
   async createRoom({
-    code,
     hiddenWord,
+    authorId,
+    author,
   }: {
-    code: string;
+    author: string;
+    authorId: string;
     hiddenWord: string;
-  }): Promise<Room> {
-    if (!code || !hiddenWord) {
-      throw new HttpException(
-        'Код или слово не указаны',
-        HttpStatus.BAD_REQUEST,
-      );
+  }): Promise<Partial<Room>> {
+    if (!hiddenWord) {
+      throw new HttpException('Слово не указанно', HttpStatus.BAD_REQUEST);
     }
+
     try {
+      const code = `${Math.random().toString(36).slice(2)}${Math.floor(
+        Math.random().toString(36).slice(2).length * Math.random(),
+      )}`;
+
       const prisma = new PrismaClient();
-      const room = await prisma.room.create({
+      const findRoom = await prisma.room.findFirst({
+        where: {
+          code,
+        },
+      });
+
+      if (findRoom) {
+        throw new HttpException('Комната уже существует', HttpStatus.CONFLICT);
+      }
+
+      const createdRoom = await prisma.room.create({
         data: {
+          author,
+          authorId,
           code,
           hiddenWord,
         },
       });
-      return room;
+      return {
+        author: createdRoom.author,
+        code,
+        hiddenWord: createdRoom.hiddenWord,
+      };
     } catch (error) {
       console.log(error);
       throw new HttpException(
@@ -97,15 +117,30 @@ export class RoomsService {
     hiddenWord: string;
   }) {
     try {
-      const room = await this.findRoom(code);
+      const room = await this.findRoom({ code });
       if (room.hiddenWord !== hiddenWord) {
         return null;
-      } else {
-        console.log('true');
-        return room.hiddenWord;
       }
+      return room.hiddenWord;
     } catch (error) {
       console.log(error);
+      throw new HttpException('Комната не найдена', HttpStatus.NOT_FOUND);
     }
+  }
+  async sendRoomOnTheRole({ room, userId }: { room: Room; userId: string }) {
+    if (userId !== room.authorId || !userId) {
+      return {
+        author: room.author,
+        code: room.code,
+        role: 'user',
+      };
+    }
+
+    return {
+      author: room.author,
+      code: room.code,
+      hiddenWord: room.hiddenWord,
+      role: 'author',
+    };
   }
 }

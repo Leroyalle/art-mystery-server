@@ -46,6 +46,7 @@ export class AppGateway {
     @ConnectedSocket() socket: Socket,
   ) {
     socket.broadcast.to(socket.data.room).emit('get_message', data);
+
     const hiddenWord = await this.roomsService.checkHiddenWord({
       code: data.pathname,
       hiddenWord: data.text,
