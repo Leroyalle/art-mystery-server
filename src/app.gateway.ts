@@ -9,12 +9,15 @@ import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
 import { RoomsService } from './rooms/rooms.service';
 
-type PaintCoords = {
+type PaintData = {
   x: number;
   y: number;
   dx: number;
   dy: number;
+  width: number;
+  color: string;
 };
+
 type Message = {
   name: string;
   text: string;
@@ -29,7 +32,7 @@ export class AppGateway {
 
   @SubscribeMessage('paint')
   async painting(
-    @MessageBody() data: PaintCoords,
+    @MessageBody() data: PaintData,
     @ConnectedSocket() socket: Socket,
   ) {
     socket.broadcast.to(socket.data.room).emit('repaint', data);
